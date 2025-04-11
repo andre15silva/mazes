@@ -1,0 +1,11 @@
+[project]
+name = "mazes"
+version = "0.1.0"
+description = "Maze generation project using mazelib"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mazelib>=0.9.16",
+    "pandas>=2.2.3",
+    "numpy>=2.2.4",
+]
