@@ -1,49 +1,55 @@
-import numpy as np
-import pandas as pd
 from mazelib import Maze
 from mazelib.generate.Prims import Prims
+
 import time
+import os
+from mazes import Mazes
 
 def generate_maze(size):
     """Generate a maze of given size using Prim's algorithm."""
     m = Maze()
-    m.generator = Prims(size, size)
+    # Use 2*size + 1 for grid dimensions to match mazelib's internal representation
+    actual_dim = size # Keep size as the logical size
+    m.generator = Prims(actual_dim, actual_dim)
     m.generate()
+    # Ensure start and end points are accessible (optional, but good practice)
+    m.grid[1, 0] = 0
+    m.grid[actual_dim*2-1, actual_dim*2] = 0
     return m.grid
-
-def maze_to_string(maze):
-    """Convert maze numpy array to string representation."""
-    # Convert to flat string of 0s and 1s
-    return ''.join(str(int(x)) for x in maze.flatten())
 
 def main():
     sizes = [5, 10, 25, 50, 100]
-    mazes_data = []
-    
+    output_dir = 'mazes'
+    os.makedirs(output_dir, exist_ok=True) # Create output directory
+    total_mazes = 0
+
     print("Starting maze generation...")
-    
+
     for size in sizes:
         print(f"Generating {size}x{size} mazes...")
         for i in range(10):
             start_time = time.time()
-            maze = generate_maze(size)
+            # Generate the grid directly
+            grid = generate_maze(size)
             generation_time = time.time() - start_time
-            
-            maze_data = {
-                'size': size,
-                'maze_number': i + 1,
-                'maze': maze_to_string(maze),
-                'generation_time': generation_time
-            }
-            mazes_data.append(maze_data)
-            print(f"Generated maze {i + 1}/10 for size {size}x{size}")
-    
-    # Create DataFrame and save to CSV
-    df = pd.DataFrame(mazes_data)
-    output_file = 'generated_mazes.csv'
-    df.to_csv(output_file, index=False)
-    print(f"\nAll mazes have been generated and saved to {output_file}")
-    print(f"Total mazes generated: {len(mazes_data)}")
+
+            # Create a Mazes instance
+            maze_instance = Mazes(
+                size=size,
+                maze_number=i + 1,
+                grid=grid,
+                generation_time=generation_time
+            )
+
+            # Save the Mazes instance to a JSON file
+            filename = os.path.join(output_dir, f"maze_{size}x{size}_{i+1}.json")
+            maze_instance.save(filename)
+            total_mazes += 1
+            print(f"Generated and saved {filename}")
+
+    # Remove DataFrame and CSV saving logic
+    print(f"\nAll mazes have been generated and saved to the '{output_dir}' directory.")
+    print(f"Total mazes generated: {total_mazes}")
 
 if __name__ == "__main__":
     main() 
