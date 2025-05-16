@@ -71,7 +71,7 @@ class MazeTester:
             passable_rep = "."
         elif input_type == 1:
             wall_rep = "❌"
-            passable_rep = "🙂"
+            passable_rep = "✅"
         dim = maze.grid.shape[0]
         start = (1, 0)
         end = (dim - 2, dim - 1)
