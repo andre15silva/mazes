@@ -9,6 +9,7 @@ from matplotlib import colors
 from openai import OpenAI
 from typing import Callable, Dict, List, Tuple, Any
 from mazes import Mazes
+import click
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -59,11 +60,15 @@ class MazeTester:
         llm_callables: Dict[str, Callable[[str], str]],
         maze_loader: Callable[[str], Mazes],
         max_trials: int = 5,
+        plot: bool = False,
+        output_dir: str = "llm_solver_plots",
     ):
         self.llm_callables = llm_callables
         self.maze_loader = maze_loader
         self.max_trials = max_trials
         self.results: List[MazeSolverResult] = []
+        self.plot = plot
+        self.output_dir = output_dir
 
     def _format_base_prompt(self, maze, input_type: Mazes) -> str:
         if input_type == 0:
@@ -78,7 +83,7 @@ class MazeTester:
         rows = [''.join(wall_rep if cell else passable_rep for cell in row) for row in maze.grid]
         maze_str = "\n".join(rows)
         return (
-            f"You are given a square maze of size {dim}×{dim}, represented by a 2D grid of emojis:\n"
+            f"You are given a square maze of size {dim}×{dim}, represented by a 2D grid of characters:\n"
             f"  • Walls: {wall_rep} (impassable)\n"
             f"  • Free cells: {passable_rep} (traversable)\n\n"
             f"Coordinates are 0‑indexed: (0,0) is the top‑left, ({dim-1},{dim-1}) is the bottom‑right.\n"
@@ -87,7 +92,7 @@ class MazeTester:
             f"Rules:\n"
             f"  1. You may move one cell at a time: up, down, left, or right.\n"
             f"  2. No diagonal moves.\n"
-            f"  3. No skipping {wall_rep} cells.\n"
+            f"  3. No jumping over {wall_rep} cells.\n"
             f"  4. You cannot enter {passable_rep} cells or revisit any cell twice.\n\n"
             f"Output:\n"
             f"  • A single Python list of (row, col) tuples, in order from the start to the end, including both endpoints.\n"
@@ -144,7 +149,7 @@ class MazeTester:
             invalid.append(len(path)-1)
         return invalid
 
-    def _plot(self, maze: Mazes, path: List[Tuple[int,int]], invalid_all: List[int], name: str, t: int):
+    def _plot(self, maze: Mazes, path: List[Tuple[int,int]], invalid_all: List[int], name: str, t: int, maze_file: str):
         dim = maze.grid.shape[0]
         fig, ax = plt.subplots(figsize=(5,5))
         ax.imshow(maze.grid, cmap=colors.ListedColormap(['white','black']), origin='upper')
@@ -155,7 +160,13 @@ class MazeTester:
             ax.scatter(c, r, c=col, s=80, marker='s', edgecolors='none')
             ax.text(c, r, str(i), va='center', ha='center', color='white', fontsize=7)
         ax.invert_yaxis()
-        plt.show()
+        # Save plot to output_dir/model_name/maze/attempt.pdf
+        maze_base = os.path.splitext(os.path.basename(maze_file))[0]
+        out_dir = os.path.join(self.output_dir, name, maze_base)
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f"attempt_{t}.pdf")
+        plt.savefig(out_path, bbox_inches='tight')
+        plt.close(fig)
 
     def solve_maze(self, filename, input_type: str):
         maze = self.maze_loader(filename)
@@ -179,7 +190,8 @@ class MazeTester:
                 ok, first_inv = self._validate_first(maze, path)
                 all_inv = self._validate_all(maze, path)
                 history.append({'path': path, 'invalid_first': first_inv, 'invalid_all': all_inv})
-                self._plot(maze, path, all_inv, name, trial)
+                if self.plot:
+                    self._plot(maze, path, all_inv, name, trial, filename)
                 if ok:
                     final = path; valid = True; break
             self.results.append(
@@ -212,42 +224,12 @@ class MazeTester:
         for res in self.results:
             print(str(res))
 
-    def display_solution_overlay(self, result: MazeSolverResult) -> None:
-        maze = self.maze_loader(result.source_file)
-        path = result.path
-        grid_dim = maze.grid.shape[0]
-        start = (1, 0)
-        end = (grid_dim - 2, grid_dim - 1)
-
-        valid_steps = [path and path[0] == start]
-        for prev, curr in zip(path, path[1:]):
-            r1, c1 = prev
-            r2, c2 = curr
-            in_bounds = 0 <= r2 < grid_dim and 0 <= c2 < grid_dim
-            not_wall = in_bounds and (maze.grid[r2, c2] == 0)
-            adj = abs(r1 - r2) + abs(c1 - c2) == 1
-            valid_steps.append(in_bounds and not_wall and adj)
-
-        fig, ax = plt.subplots(figsize=(6, 6))
-        ax.imshow(maze.grid, cmap=colors.ListedColormap(['white', 'black']), origin='upper')
-        ax.set_title(f"{result.llm_name} Solution Overlay - {'Valid' if result.valid else 'Invalid'}")
-        ax.set_xticks(range(grid_dim)); ax.set_yticks(range(grid_dim))
-        ax.grid(which='both', color='lightgray', linewidth=0.5)
-
-        for idx, ((r, c), ok) in enumerate(zip(path, valid_steps)):
-            ax.scatter(c, r, c='green' if ok else 'red', s=100, marker='s', edgecolors='none')
-            ax.text(c, r, str(idx), va='center', ha='center', color='white', fontsize=8)
-
-        ax.invert_yaxis()
-        plt.show()
-
-    def display_all_overlays(self) -> None:
-        for res in self.results:
-            self.display_solution_overlay(res)
-
-
-if __name__ == "__main__":
-
+@click.command()
+@click.option('--model', type=str, default='gpt-4.1', show_default=True, help='Model name to use (e.g., gpt-4.1)')
+@click.option('--input-type', type=click.Choice(['0', '1']), default='0', show_default=True, help='Input type: 0 for #/., 1 for ❌✅')
+@click.option('--plot/--no-plot', default=True, show_default=True, help='Enable or disable output of plots')
+@click.option('--output-dir', type=str, default='llm_solver_plots', show_default=True, help='Directory to save output plots')
+def main(model, input_type, plot, output_dir):
     def make_openai_callable(model: str) -> Callable[[str], str]:
         client = OpenAI(
             api_key=os.getenv("OPENAI_API_KEY")
@@ -260,26 +242,28 @@ if __name__ == "__main__":
         ).output_text
 
     llm_map = {
-        "gpt-4.1": make_openai_callable("gpt-4.1"),
-
+        model: make_openai_callable(model),
     }
-
-    input_type = int(input("Choose input type (0 for #/., 1 for ❌✅): "))
-    if input_type not in [0, 1]:
-        raise ValueError("Invalid input type. Choose 0 or 1.")
-
-    tester = MazeTester(llm_map, Mazes.load)
-    files = ["mazes/maze_10x10_8.json",]
-    tester.test_many(files, input_type)
+    input_type_int = int(input_type)
+    if input_type_int not in [0, 1]:
+        raise ValueError('Invalid input type. Choose 0 or 1.')
+    # Add input_type as a subdirectory to output_dir
+    output_dir_with_type = os.path.join(output_dir, f"input_type_{input_type}")
+    tester = MazeTester(llm_map, Mazes.load, plot=plot, output_dir=output_dir_with_type)
+    files = []
+    for fname in os.listdir("mazes"):
+        m = re.match(r"maze_(\d+)x\1_\d+\.json", fname)
+        if m and int(m.group(1)) <= 10:
+            files.append(os.path.join("mazes", fname))
+    files.sort()
+    tester.test_many(files, input_type_int)
     tester.save_results("llm_maze_results.json")
-
     print("All solutions (text):")
     tester.display_solutions()
-
-    print("Visual overlays:")
-    tester.display_all_overlays()
-
     print("Summary:")
     for model, stats in tester.summary().items():
         print(f"- {model}: {stats['successes']}/{stats['total']} solved "
               f"({stats['success_rate']:.0%}), avg {stats['avg_time']:.3f}s")
+
+if __name__ == "__main__":
+    main()

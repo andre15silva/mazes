@@ -12,4 +12,5 @@ dependencies = [
     "ipykernel>=6.29.5",
     "matplotlib>=3.10.3",
     "openai>=1.78.1",
+    "click>=8.2.0",
 ]
