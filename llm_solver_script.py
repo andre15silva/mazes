@@ -171,7 +171,7 @@ class MazeTester:
                 for i, h in enumerate(history, 1):
                     _, first_invalid = self._validate_first(maze, h['path'])
                     fb = first_invalid[0]
-                    prompt += f"\n\nHere's your previous attempt including all steps until the first incorrect step. The last point was where you failed. Do not repeat the same mistake. Iteration {i}:\n{h['path'][:fb+1]}"
+                    prompt += f"\n\nHere's a previous attempt including all steps until the first invalid step. The last point was where the path became invalid. Do not repeat it. You may need to backtrack to previous steps. Do not assume all other steps are correct despite being valid. Attempt #{1}:\n{h['path'][:fb+1]}"
                 print(prompt)
                 resp = fn(prompt)
                 print(resp)
