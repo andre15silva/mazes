@@ -59,7 +59,6 @@ def test_openai_solver_make_api_call_success(mock_create, ascii_formatter_openai
             {"role": "system", "content": "You are an expert maze solver. Follow the output rules precisely."},
             {"role": "user", "content": "Test prompt"}
         ],
-        max_tokens=500
     )
 
 @patch('openai.resources.chat.completions.Completions.create')
