@@ -18,7 +18,7 @@ def generate_maze(size):
     return m.grid
 
 def main():
-    sizes = [5, 10, 25, 50, 100]
+    sizes = [3, 4, 5, 6, 7, 8, 9, 10]
     output_dir = 'mazes'
     os.makedirs(output_dir, exist_ok=True) # Create output directory
     total_mazes = 0

@@ -13,4 +13,6 @@ dependencies = [
     "matplotlib>=3.10.3",
     "openai>=1.78.1",
     "click>=8.2.0",
+    "pytest>=8.3.5",
+    "litellm>=1.67.5",
 ]
