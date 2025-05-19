@@ -72,14 +72,10 @@ def test_llm_solver_base_parse_response():
     assert solver._parse_response("Here is one: (1,0),(2,0),(3,0) but it is not a list.") == [(1,0),(2,0),(3,0)]
 
 def test_llm_solver_successful_first_try(ascii_formatter_llm):
-    test_maze = load_test_maze() # Load 5x5 maze
+    test_maze = load_test_maze()
     print(test_maze.grid)
-    # For a 5x5 maze, start=(1,0), end=(3,4). A possible path for maze_5x5_1.json
-    # This is an example path, the actual path from maze_5x5_1.json might differ
-    # and a mock LLM solver doesn't actually solve it. We just need a valid formatted path.
-    # Let's use a short, simple, but valid path structure for the mock response.
-    mock_valid_path_5x5 = [(1,0), (1,1), (2,1), (3,1), (3, 2), (3, 3), (4, 3), (5, 3), (6, 3), (7, 3), (8, 3),
-                           (9, 3), (9, 4), (9, 5), (9, 6), (9, 7), (9, 8), (9, 9), (9, 10)] 
+    mock_valid_path_5x5 = [(1,0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (2, 9),
+                           (3, 9), (4, 9), (5, 9), (6, 9), (7, 9), (8, 9), (9, 9), (9, 10)] 
     responses = [str(mock_valid_path_5x5)]
     solver = MockLLMProviderSolver(formatter=ascii_formatter_llm, responses=responses, max_trials=1)
     
@@ -93,10 +89,9 @@ def test_llm_solver_successful_first_try(ascii_formatter_llm):
     assert solution.metadata['trials_taken'] == 1
 
 def test_llm_solver_fail_then_succeed(ascii_formatter_llm):
-    test_maze = load_test_maze() # Load 5x5 maze
-    # For a 5x5 maze, start=(1,0), end=(3,4)
-    mock_valid_path_5x5 = [(1,0), (1,1), (2,1), (3,1), (3, 2), (3, 3), (4, 3), (5, 3), (6, 3), (7, 3), (8, 3),
-                           (9, 3), (9, 4), (9, 5), (9, 6), (9, 7), (9, 8), (9, 9), (9, 10)] 
+    test_maze = load_test_maze()
+    mock_valid_path_5x5 = [(1,0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (2, 9),
+                           (3, 9), (4, 9), (5, 9), (6, 9), (7, 9), (8, 9), (9, 9), (9, 10)] 
     responses = [
         "[(1, 0), (0, 0), (0, 1)]", # Invalid move from (1,0) to (0,0) (hits outer wall or invalid move)
         str(mock_valid_path_5x5)  # Valid path

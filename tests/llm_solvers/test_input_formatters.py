@@ -25,12 +25,12 @@ def test_ascii_input_formatter(sample_grid_3x3):
 
 def test_emoji_input_formatter(sample_grid_3x3):
     formatter = EmojiInputFormatter()
-    assert formatter.wall_char == "🧱"
-    assert formatter.path_char == "➡️"
+    assert formatter.wall_char == "❤️"
+    assert formatter.path_char == "🙂"
 
     expected_map_string = (
-        "🧱🧱➡️\n"
-        "➡️🧱➡️\n"
-        "➡️➡️🧱"
+        "❤️❤️🙂\n"
+        "🙂❤️🙂\n"
+        "🙂🙂❤️"
     )
     assert formatter.format_grid(sample_grid_3x3) == expected_map_string 

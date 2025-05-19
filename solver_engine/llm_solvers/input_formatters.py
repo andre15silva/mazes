@@ -45,15 +45,15 @@ class AsciiInputFormatter(InputFormatter):
         return "\n".join(rows)
 
 class EmojiInputFormatter(InputFormatter):
-    """Formats the maze using '🧱' for walls and '➡️' for paths."""
+    """Formats the maze using '❤️' for walls and '🙂' for paths."""
 
     @property
     def wall_char(self) -> str:
-        return "🧱" # Brick emoji for wall
+        return "❤️"
 
     @property
     def path_char(self) -> str:
-        return "➡️" # Right arrow for path (could be any path-like emoji)
+        return "🙂"
 
     def format_grid(self, grid: np.ndarray) -> str:
         rows = [''.join(self.wall_char if cell == 1 else self.path_char for cell in row) for row in grid]
