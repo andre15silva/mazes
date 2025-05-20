@@ -18,7 +18,7 @@ def generate_maze(size):
     return m.grid
 
 def main():
-    sizes = [3, 4, 5, 6, 7, 8, 9, 10]
+    sizes = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     output_dir = 'mazes'
     os.makedirs(output_dir, exist_ok=True) # Create output directory
     total_mazes = 0
@@ -43,9 +43,10 @@ def main():
 
             # Save the Mazes instance to a JSON file
             filename = os.path.join(output_dir, f"maze_{size}x{size}_{i+1}.json")
-            maze_instance.save(filename)
-            total_mazes += 1
-            print(f"Generated and saved {filename}")
+            if not os.path.exists(filename):
+                maze_instance.save(filename)
+                total_mazes += 1
+                print(f"Generated and saved {filename}")
 
     # Remove DataFrame and CSV saving logic
     print(f"\nAll mazes have been generated and saved to the '{output_dir}' directory.")

@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional, Dict, Any
 # Solver engine components
 from solver_engine.maze_utils import Mazes
 from solver_engine.experiment_runner import ExperimentRunner
-from solver_engine.results import save_results_to_json, print_summary_from_results, MazeSolution
+from solver_engine.results import save_results_to_json, print_summary_from_results, MazeSolution, load_results_from_json
 from solver_engine.plotting_utils import plot_solution_to_file
 from solver_engine.abc_solver import Solver
 
@@ -83,6 +83,13 @@ def main(
     if plot:
         os.makedirs(plot_output_dir, exist_ok=True)
 
+    # Load existing results if available
+    results_json_path = os.path.join(output_dir, results_file)
+    existing_results = []
+    if os.path.exists(results_json_path):
+        click.echo(f"Loading existing results from {results_json_path}")
+        existing_results = load_results_from_json(results_json_path)
+
     # --- 1. Select and Prepare Maze Files ---
     all_maze_files_in_dir = []
     for fname in sorted(os.listdir(maze_dir)):
@@ -140,11 +147,14 @@ def main(
         return
 
     # --- 3. Run Experiments ---
-    runner = ExperimentRunner(solvers=solvers_to_run, maze_files=all_maze_files_in_dir)
-    experiment_results: List[MazeSolution] = runner.run_experiments()
+    runner = ExperimentRunner(
+        solvers=solvers_to_run, 
+        maze_files=all_maze_files_in_dir,
+        existing_results=existing_results
+    )
+    experiment_results = runner.run_experiments()
 
     # --- 4. Save Results ---
-    results_json_path = os.path.join(output_dir, results_file)
     save_results_to_json(experiment_results, results_json_path)
 
     # --- 5. Print Summary ---
@@ -162,8 +172,8 @@ def main(
                 maze_obj_for_plot = None
                 # Try to find the original maze file path from the result or re-construct
                 # Assuming result.maze_id is (size, number)
-                if isinstance(result.maze_id, tuple) and len(result.maze_id) == 2:
-                    size, num = result.maze_id
+                if isinstance(result.maze_id, (tuple, list)) and len(result.maze_id) == 2:
+                    size, num = result.maze_id if isinstance(result.maze_id, tuple) else result.maze_id
                     expected_fname = f"maze_{size}x{size}_{num}.json"
                     for mfile in all_maze_files_in_dir: # Search within the list of files that were processed
                         if expected_fname == os.path.basename(mfile):
