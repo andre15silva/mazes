@@ -101,7 +101,7 @@ def plot_solve_times_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_di
         plt.ylabel('Solve Time (seconds)')
         
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'solve_times_comparison.png'))
+        plt.savefig(os.path.join(output_dir, 'solve_times_comparison.pdf'))
         plt.close()
     
     # Original solve times plot for all solvers
@@ -110,7 +110,7 @@ def plot_solve_times_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_di
     plt.title('Overall Solve Times by Maze Size')
     plt.xlabel('Maze Size')
     plt.ylabel('Solve Time (seconds)')
-    plt.savefig(os.path.join(output_dir, 'solve_times_by_size.png'))
+    plt.savefig(os.path.join(output_dir, 'solve_times_by_size.pdf'))
     plt.close()
 
 def plot_success_rate_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_dir: str):
@@ -143,7 +143,7 @@ def plot_success_rate_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_d
         plt.ylim(0, 1)
         
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'success_rate_comparison.png'))
+        plt.savefig(os.path.join(output_dir, 'success_rate_comparison.pdf'))
         plt.close()
     
     # Original success rate plot for all solvers
@@ -154,7 +154,7 @@ def plot_success_rate_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_d
     plt.xlabel('Maze Size')
     plt.ylabel('Success Rate')
     plt.ylim(0, 1)
-    plt.savefig(os.path.join(output_dir, 'success_rate_by_size.png'))
+    plt.savefig(os.path.join(output_dir, 'success_rate_by_size.pdf'))
     plt.close()
 
 def plot_trial_progression(trial_df: pd.DataFrame, output_dir: str):
@@ -167,7 +167,7 @@ def plot_trial_progression(trial_df: pd.DataFrame, output_dir: str):
         plt.xlabel('Trial Number')
         plt.ylabel('Success Rate')
         plt.ylim(0, 1)
-        plt.savefig(os.path.join(output_dir, 'trial_progression.png'))
+        plt.savefig(os.path.join(output_dir, 'trial_progression.pdf'))
         plt.close()
 
 def generate_summary_stats(df: pd.DataFrame, trial_df: pd.DataFrame) -> pd.DataFrame:
