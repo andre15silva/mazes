@@ -186,6 +186,9 @@ class LLMSolverBase(Solver):
             f"  3. No jumping over {wall_char} cells.",
             f"  4. You cannot move into {wall_char} cells.",
             "  5. You cannot revisit any cell (including the start and end points if part of a longer path attempt).",
+            "  6. You must return a valid path from the start to the end.",
+            "  7. You must return a complete path, not a partial path.",
+            "  8. You must NOT return an empty path, there is a solution to the maze.",
             "",
             "Output:",
             "  - A single Python list of (row, col) tuples, in order from the start to the end, including both endpoints.",
@@ -206,9 +209,15 @@ class LLMSolverBase(Solver):
             else:
                 first_invalid_idx = first_invalid_indices[0]
                 # Display path up to and including the first invalid step
-                path_segment_to_show = attempt_path[:first_invalid_idx + 1]
-                prompt_lines.append(f"Here is a previous attempt (Attempt #{i}) including all steps until the first invalid step ({attempt_path[first_invalid_idx]}) at index {first_invalid_idx}:\n{path_segment_to_show}")
-                prompt_lines.append("The last point shown was where the path became invalid. Do not repeat this mistake. You may need to backtrack from earlier valid steps. Do not assume all other steps before the error are correct parts of the final solution.")
+                if attempt_path:
+                    path_segment_to_show = attempt_path[:first_invalid_idx + 1]
+                    prompt_lines.append(f"Here is a previous attempt (Attempt #{i}) including all steps until the first invalid step ({attempt_path[first_invalid_idx]}) at index {first_invalid_idx}:\n{path_segment_to_show}")
+                    prompt_lines.append("The last point shown was where the path became invalid. Do not repeat this mistake. You may need to backtrack from earlier valid steps. Do not assume all other steps before the error are correct parts of the final solution.")
+                else:
+                    # Show the whole attempt and say it was invalid
+                    prompt_lines.append(f"Here is a previous attempt (Attempt #{i}) including all steps:\n{attempt_path}")
+                    prompt_lines.append("This path was invalid. Do not repeat the mistakes shown. You may need to backtrack from earlier valid steps. Do not assume all other steps before the error are correct parts of the final solution.")
+
 
         return "\n".join(prompt_lines)
 

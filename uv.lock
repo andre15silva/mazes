@@ -1234,6 +1234,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pytest" },
     { name = "python-dotenv" },
+    { name = "tqdm" },
 ]
 
 [package.metadata]
@@ -1248,6 +1249,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
+    { name = "tqdm", specifier = ">=4.67.1" },
 ]
 
 [[package]]
