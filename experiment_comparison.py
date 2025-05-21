@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import List, Dict, Any, Tuple
 from pathlib import Path
+import numpy as np
 
 def load_experiment_results(results_file: str) -> List[Dict[str, Any]]:
     """Load results from a JSON file."""
@@ -114,60 +115,59 @@ def plot_solve_times_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_di
     plt.close()
 
 def plot_success_rate_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_dir: str):
-    """Plot success rate by maze size, comparing first trial vs final results."""
-    solvers_with_trials = trial_df['solver_name'].unique()
-    
-    if len(solvers_with_trials) > 0:
-        plt.figure(figsize=(15, 6))
-        
-        # First trial success rates
-        plt.subplot(1, 2, 1)
-        first_trial_rates = df[df['solver_name'].isin(solvers_with_trials)].groupby(
-            ['solver_name', 'maze_size'])['first_trial_valid'].mean().reset_index()
-        sns.lineplot(data=first_trial_rates, x='maze_size', y='first_trial_valid', 
-                    hue='solver_name', marker='o')
-        plt.title('First Trial Success Rate by Maze Size')
-        plt.xlabel('Maze Size')
-        plt.ylabel('Success Rate')
-        plt.ylim(0, 1)
-        
-        # Final success rates
-        plt.subplot(1, 2, 2)
-        final_rates = df[df['solver_name'].isin(solvers_with_trials)].groupby(
-            ['solver_name', 'maze_size'])['valid'].mean().reset_index()
-        sns.lineplot(data=final_rates, x='maze_size', y='valid', 
-                    hue='solver_name', marker='o')
-        plt.title('Final Success Rate by Maze Size')
-        plt.xlabel('Maze Size')
-        plt.ylabel('Success Rate')
-        plt.ylim(0, 1)
-        
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'success_rate_comparison.pdf'))
-        plt.close()
-    
-    # Original success rate plot for all solvers
-    plt.figure(figsize=(12, 6))
-    success_rates = df.groupby(['solver_name', 'maze_size'])['valid'].mean().reset_index()
-    sns.lineplot(data=success_rates, x='maze_size', y='valid', hue='solver_name', marker='o')
-    plt.title('Overall Success Rate by Maze Size')
-    plt.xlabel('Maze Size')
-    plt.ylabel('Success Rate')
-    plt.ylim(0, 1)
-    plt.savefig(os.path.join(output_dir, 'success_rate_by_size.pdf'))
-    plt.close()
+    """For each solver with >1 trial, plot success rate by maze size, with a line for each trial N (accumulated success rate by or before trial N)."""
+    # Find solvers with max(trials_taken) > 1
+    solver_trial_counts = df.groupby('solver_name')['trials_taken'].max()
+    solvers_with_multiple_trials = solver_trial_counts[solver_trial_counts > 1].index.tolist()
 
-def plot_trial_progression(trial_df: pd.DataFrame, output_dir: str):
-    """Plot success rate progression across trials."""
-    if not trial_df.empty:
+    if len(solvers_with_multiple_trials) == 0:
+        print("No solvers attempted more than one trial. No plot generated.")
+        return
+
+    linestyles = ['--', '-.', ':', (0, (3, 1, 1, 1))]  # cycle through some styles
+    markers = ['s', 'D', 'v', '^', 'P', 'X', '*']
+
+    for solver in solvers_with_multiple_trials:
+        solver_trials = trial_df[trial_df['solver_name'] == solver]
+        if solver_trials.empty:
+            continue
+        max_trial = solver_trials['trial_number'].max()
+        maze_sizes = sorted(solver_trials['maze_size'].unique())
+
         plt.figure(figsize=(12, 6))
-        success_by_trial = trial_df.groupby(['solver_name', 'trial_number'])['valid'].mean().reset_index()
-        sns.lineplot(data=success_by_trial, x='trial_number', y='valid', hue='solver_name', marker='o')
-        plt.title('Success Rate Progression Across Trials')
-        plt.xlabel('Trial Number')
+        # Plot the final success rate line for this solver
+        filtered_df = df[df['solver_name'] == solver]
+        success_rates = filtered_df.groupby(['maze_size'])['valid'].mean().reset_index()
+        
+        # Filter out maze sizes where previous size had 0 accuracy
+        valid_sizes = []
+        for i, size in enumerate(success_rates['maze_size']):
+            if i == 0 or success_rates.iloc[i-1]['valid'] > 0:
+                valid_sizes.append(size)
+        success_rates = success_rates[success_rates['maze_size'].isin(valid_sizes)]
+        
+        plt.plot(valid_sizes, success_rates['valid'], label=f"{solver} (final)", marker='o', color='black', linewidth=2)
+
+        # Now plot accumulated success rate at each trial N for this solver
+        for n in range(1, max_trial + 1):
+            by_maze = solver_trials[solver_trials['trial_number'] <= n].groupby(['maze_size', 'maze_number'])['valid'].max().reset_index()
+            by_size = by_maze.groupby('maze_size')['valid'].mean().reset_index()
+            # Filter to same valid sizes as final success rates
+            by_size = by_size[by_size['maze_size'].isin(valid_sizes)]
+            label = f"≤trial {n}"
+            style = linestyles[(n-1) % len(linestyles)]
+            marker = markers[(n-1) % len(markers)]
+            plt.plot(by_size['maze_size'], by_size['valid'], linestyle=style, marker=marker, label=label, alpha=0.7)
+
+        plt.title(f'Success Rate by Maze Size ({solver}, by Trial N)')
+        plt.xlabel('Maze Size')
         plt.ylabel('Success Rate')
         plt.ylim(0, 1)
-        plt.savefig(os.path.join(output_dir, 'trial_progression.pdf'))
+        plt.gca().xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Force integer ticks on x-axis
+        plt.legend(title='Trial', loc='upper right')
+        plt.tight_layout()
+        safe_solver_name = solver.replace('/', '_').replace(' ', '_')
+        plt.savefig(os.path.join(output_dir, f'success_rate_by_size_{safe_solver_name}_multiple_trials.pdf'))
         plt.close()
 
 def generate_summary_stats(df: pd.DataFrame, trial_df: pd.DataFrame) -> pd.DataFrame:
@@ -240,8 +240,6 @@ def main(experiment_dirs, output_dir):
     click.echo("Generating comparison plots...")
     plot_solve_times_by_size(df, trial_df, output_dir)
     plot_success_rate_by_size(df, trial_df, output_dir)
-    if not trial_df.empty:
-        plot_trial_progression(trial_df, output_dir)
     
     # Generate and save summary statistics
     stats_df = generate_summary_stats(df, trial_df)
