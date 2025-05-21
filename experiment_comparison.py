@@ -170,6 +170,20 @@ def plot_success_rate_by_size(df: pd.DataFrame, trial_df: pd.DataFrame, output_d
         plt.savefig(os.path.join(output_dir, f'success_rate_by_size_{safe_solver_name}_multiple_trials.pdf'))
         plt.close()
 
+    # Plot solve rate by maze size for all solvers (each as a separate line)
+    all_success_rates = df.groupby(['solver_name', 'maze_size'])['valid'].mean().reset_index()
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(data=all_success_rates, x='maze_size', y='valid', hue='solver_name', marker='o')
+    plt.title('Success Rate by Maze Size (All Solvers)')
+    plt.xlabel('Maze Size')
+    plt.ylabel('Success Rate')
+    plt.ylim(0, 1)
+    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    plt.legend(title='Solver', loc='upper right')
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, 'success_rate_by_size_all_solvers.pdf'))
+    plt.close()
+
 def generate_summary_stats(df: pd.DataFrame, trial_df: pd.DataFrame) -> pd.DataFrame:
     """Generate summary statistics for each solver."""
     stats = []
