@@ -8,7 +8,7 @@ from typing import List, Tuple, Optional, Dict, Any
 from solver_engine.maze_utils import Mazes
 from solver_engine.experiment_runner import ExperimentRunner
 from solver_engine.results import save_results_to_json, print_summary_from_results, MazeSolution, load_results_from_json
-from solver_engine.plotting_utils import plot_solution_to_file
+from solver_engine.plotting_utils import plot_solution_to_file, plot_empty_maze_to_file
 from solver_engine.abc_solver import Solver
 
 # Solvers
@@ -186,6 +186,9 @@ def main(
                 if not maze_obj_for_plot:
                     click.echo(f"Could not find/load maze for result: {result.solver_name} on {result.maze_id}. Skipping plot.")
                     continue
+
+                # Plot the empty maze (only once per maze file)
+                plot_empty_maze_to_file(maze_obj_for_plot, plot_output_dir)
 
                 # For LLM solvers, plot each attempt from history if requested and available
                 if isinstance(solvers_to_run[0], LLMSolverBase) and 'llm_history' in result.metadata:

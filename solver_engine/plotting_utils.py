@@ -123,3 +123,60 @@ def plot_solution_to_file(
     
     plt.close(fig) # Close the figure to free memory
     return full_plot_path 
+
+def plot_empty_maze_to_file(
+    maze: Mazes,
+    output_dir: str
+) -> Optional[str]:
+    """
+    Plots the empty maze grid (no path overlay) and saves it to a file.
+
+    Args:
+        maze: The Mazes object.
+        output_dir: Directory to save the plot.
+
+    Returns:
+        The path to the saved plot file, or None if plotting failed.
+    """
+    if not os.path.exists(output_dir):
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+        except OSError as e:
+            print(f"Error creating output directory {output_dir}: {e}")
+            return None
+
+    dim = maze.grid.shape[0]
+    fig, ax = plt.subplots(figsize=(max(5, dim / 2), max(5, dim / 2)))
+    ax.imshow(maze.grid, cmap=DEFAULT_CMAP, origin='upper', interpolation='nearest')
+
+    plot_title = f"Empty Maze - Maze {maze.size}x{maze.size}_{maze.maze_number}"
+    ax.set_title(plot_title, fontsize=10)
+    ax.set_xticks(np.arange(-.5, dim, 1), minor=True)
+    ax.set_yticks(np.arange(-.5, dim, 1), minor=True)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(True, which='minor', color='k', linestyle='-', linewidth=0.5)
+    ax.tick_params(which='minor', size=0)
+    ax.invert_yaxis()
+
+    # Mark standard start and end points
+    std_start_r, std_start_c = 1, 0
+    std_end_r, std_end_c = dim - 2, dim - 1
+    ax.plot(std_start_c, std_start_r, 'go', markersize=10, alpha=0.5, label='Std. Start')
+    ax.plot(std_end_c, std_end_r, 'ro', markersize=10, alpha=0.5, label='Std. End')
+
+    # Construct filename
+    maze_id_str = f"maze_{maze.size}x{maze.size}_{maze.maze_number}"
+    final_plot_dir = os.path.join(output_dir, "empty_maze", maze_id_str)
+    os.makedirs(final_plot_dir, exist_ok=True)
+    plot_filename = f"{maze_id_str}_empty.pdf"
+    full_plot_path = os.path.join(final_plot_dir, plot_filename)
+
+    try:
+        plt.savefig(full_plot_path, bbox_inches='tight')
+    except Exception as e:
+        print(f"Error saving plot to {full_plot_path}: {e}")
+        plt.close(fig)
+        return None
+    plt.close(fig)
+    return full_plot_path 
