@@ -97,8 +97,6 @@ def plot_solution_to_file(
     std_end_r, std_end_c = dim - 2, dim - 1
     ax.plot(std_start_c, std_start_r, 'go', markersize=10, alpha=0.5, label='Std. Start') # Green circle
     ax.plot(std_end_c, std_end_r, 'ro', markersize=10, alpha=0.5, label='Std. End')   # Red circle
-    if path_to_plot:
-        ax.legend(fontsize=8, loc='upper right', bbox_to_anchor=(1.25, 1.0))
 
     ax.invert_yaxis() # Match array indexing (0,0 at top-left)
 
